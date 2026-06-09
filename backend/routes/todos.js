@@ -62,22 +62,49 @@ router.post('/', async (req, res) => {
 });
 
 // PUT update todo
-router.put('/:id', async (req, res) => {
+//router.put('/:id', async (req, res) => {
+//  try {
+//    const todo = await Todo.findByPk(req.params.id);
+//    if (!todo) {
+//      return res.status(404).json({ error: 'Todo not found.' });
+//    }
+//    const { title, completed, userId } = req.body;
+//    await todo.update({
+//      title: title !== undefined ? title : todo.title,
+//      completed: completed !== undefined ? completed : todo.completed,
+//      userId: userId !== undefined ? userId : todo.userId
+//    });
+//    res.json(todo);
+//  } catch (error) {
+//    console.error('Update todo error:', error);
+//    res.status(500).json({ error: 'Failed to update todo.' });
+//  }
+//});
+
+// backend/routes/todos.js (או tasks.js)
+
+// שינוי ל-PATCH עבור עדכון דינמי וחלקי של המשימה
+router.patch('/:id', async (req, res) => {
   try {
-    const todo = await Todo.findByPk(req.params.id);
+    const todoId = req.params.id;
+    const userId = req.headers['x-user-id']; // מזהה המשתמש מה-Header
+
+    // 1. מוצאים את המשימה בבסיס הנתונים ומוודאים שהיא שייכת למשתמש
+    const todo = await Todo.findOne({ where: { id: todoId, userId: userId } });
+    
     if (!todo) {
-      return res.status(404).json({ error: 'Todo not found.' });
+      return res.status(404).json({ error: 'Task not found or unauthorized.' });
     }
-    const { title, completed, userId } = req.body;
-    await todo.update({
-      title: title !== undefined ? title : todo.title,
-      completed: completed !== undefined ? completed : todo.completed,
-      userId: userId !== undefined ? userId : todo.userId
-    });
-    res.json(todo);
+
+    // 2. מעדכנים דינמית ב-MySQL רק את השדות שהגיעו בתוך req.body
+    // (לדוגמה: רק את ה-title, רק את ה-completed, או את שניהם)
+    await todo.update(req.body);
+
+    // 3. מחזירים את המשימה המעודכת המלאה בפורמט JSON
+    return res.json(todo);
   } catch (error) {
-    console.error('Update todo error:', error);
-    res.status(500).json({ error: 'Failed to update todo.' });
+    console.error("Error updating task:", error);
+    return res.status(500).json({ error: 'Server error while updating task.' });
   }
 });
 

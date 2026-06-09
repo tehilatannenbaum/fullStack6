@@ -27,11 +27,6 @@ const PostsTab = ({ currentUser }) => {
     setLoading(true);
     setError('');
     try {
-      // Fetch posts. We filter by active user or load all posts?
-      // Coursework says: "הצגת רשימת ה- posts של המשתמש הפעיל" (Display the active user's posts)
-      // Wait! It also says they can add new posts.
-      // Let's fetch all posts of the user. If they want to view all or just their own, let's load the active user's posts.
-      // Wait, let's fetch all posts of the active user:
       const response = await fetch(`http://localhost:5000/posts?userId=${currentUser.id}`);
       if (!response.ok) throw new Error('Failed to fetch posts.');
       const data = await response.json();
@@ -115,30 +110,45 @@ const PostsTab = ({ currentUser }) => {
         if (!response.ok) throw new Error('Failed to create post.');
         const newPost = await response.json();
         setPosts([...posts, newPost]);
+        setPostModalOpen(false);
       } else {
+        const originalPost = posts.find(p => p.id === currentPost.id);
+        
+        const updatedFields = {};
+        if (currentPost.title.trim() !== originalPost.title) {
+          updatedFields.title = currentPost.title.trim();
+        }
+        if (currentPost.body.trim() !== originalPost.body) {
+          updatedFields.body = currentPost.body.trim();
+        }
+
+        if (Object.keys(updatedFields).length === 0) {
+          setPostModalOpen(false);
+          return;
+        }
+
         const response = await fetch(`http://localhost:5000/posts/${currentPost.id}`, {
-          method: 'PUT',
+          method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
             'x-user-id': currentUser.id.toString(),
           },
-          body: JSON.stringify({
-            title: currentPost.title,
-            body: currentPost.body,
-          }),
+          body: JSON.stringify(updatedFields),
         });
+        
         if (!response.ok) {
           const errData = await response.json();
           throw new Error(errData.error || 'Failed to update post.');
         }
+        
         const updatedPost = await response.json();
         setPosts(posts.map(p => p.id === currentPost.id ? updatedPost : p));
+        setPostModalOpen(false);
       }
-      setPostModalOpen(false);
     } catch (err) {
       alert(err.message);
     } finally {
-      setPostSubmitting(false);
+      setPostSubmitting(false); 
     }
   };
 
@@ -166,7 +176,6 @@ const PostsTab = ({ currentUser }) => {
       if (!response.ok) throw new Error('Failed to post comment.');
       const newComment = await response.json();
       
-      // Update comments list
       const existingComments = commentsMap[postId] || [];
       setCommentsMap(prev => ({
         ...prev,
@@ -208,22 +217,45 @@ const PostsTab = ({ currentUser }) => {
     setEditingComment({ ...comment });
   };
 
-  const handleEditCommentSubmit = async (e, postId) => {
+ const handleEditCommentSubmit = async (e, postId) => {
     e.preventDefault();
     if (!editingComment.body.trim()) return;
 
     setCommentSubmitting(true);
     try {
+      // 1. מוצאים את התגובה המקורית מתוך מפת התגובות הנוכחית ב-state
+      const originalComment = (commentsMap[postId] || []).find(c => c.id === editingComment.id);
+      
+      if (!originalComment) return;
+
+      // 2. בונים אובייקט חלקי ומכניסים אליו *רק* שדות שערכם שונה מהמקור
+      const updatedFields = {};
+      
+      if (editingComment.name && editingComment.name.trim() !== originalComment.name) {
+        updatedFields.name = editingComment.name.trim();
+      }
+      if (editingComment.body && editingComment.body.trim() !== originalComment.body) {
+        updatedFields.body = editingComment.body.trim();
+      }
+
+      // בדיקת לוגים ב-Console: תוכלי לראות בלייב מה נשלח!
+      console.log("Original Comment:", originalComment);
+      console.log("Fields to send over network (PATCH):", updatedFields);
+
+      // 3. אופטימיזציה: אם לחצו שמירה בלי לשנות שום דבר, סוגרים את העריכה וחוסכים פנייה לרשת
+      if (Object.keys(updatedFields).length === 0) {
+        setEditingComment(null);
+        return;
+      }
+
+      // 4. שליחת בקשת PATCH חסכונית שמכילה אך ורק את השדות שהשתנו
       const response = await fetch(`http://localhost:5000/comments/${editingComment.id}`, {
-        method: 'PUT',
+        method: 'PATCH', // מוודאים שזה PATCH
         headers: {
           'Content-Type': 'application/json',
           'x-user-id': currentUser.id.toString(),
         },
-        body: JSON.stringify({
-          name: editingComment.name || currentUser.name,
-          body: editingComment.body,
-        }),
+        body: JSON.stringify(updatedFields), // שולחים רק את השדות שהשתנו בפועל!
       });
 
       if (!response.ok) {
@@ -232,11 +264,14 @@ const PostsTab = ({ currentUser }) => {
       }
 
       const updated = await response.json();
+      
+      // 5. עדכון ה-state המקומי ב-React
       setCommentsMap(prev => ({
         ...prev,
         [postId]: (prev[postId] || []).map(c => c.id === editingComment.id ? updated : c)
       }));
-      setEditingComment(null);
+      
+      setEditingComment(null); // יוצאים ממצב עריכה
     } catch (err) {
       alert(err.message);
     } finally {

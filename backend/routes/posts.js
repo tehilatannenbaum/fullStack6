@@ -75,28 +75,27 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PUT update post (only if owned by user)
-router.put('/:id', async (req, res) => {
+// PATCH post (עדכון חלקי ודינמי החוסך תעבורת רשת)
+router.patch('/:id', async (req, res) => {
   try {
-    const post = await Post.findByPk(req.params.id);
+    const postId = req.params.id;
+    const userId = req.headers['x-user-id']; // מושך את ה-ID מה-Header בהתאמה לשאר הראוטים שלך
+
+    // 1. מוודאים שהפוסט קיים ושייך למשתמש שמנסה לערוך אותו
+    const post = await Post.findOne({ where: { id: postId, userId: userId } });
+    
     if (!post) {
-      return res.status(404).json({ error: 'Post not found.' });
+      return res.status(404).json({ error: 'Post not found or unauthorized.' });
     }
 
-    const requestUserId = req.headers['x-user-id'];
-    if (!requestUserId || parseInt(requestUserId) !== post.userId) {
-      return res.status(403).json({ error: 'Unauthorized. You can only edit your own posts.' });
-    }
+    // 2. מעדכנים רק את השדות שהגיעו ב-req.body
+    await post.update(req.body);
 
-    const { title, body } = req.body;
-    await post.update({
-      title: title !== undefined ? title : post.title,
-      body: body !== undefined ? body : post.body
-    });
-    res.json(post);
+    // 3. מחזירים את האובייקט המעודכן
+    return res.json(post);
   } catch (error) {
-    console.error('Update post error:', error);
-    res.status(500).json({ error: 'Failed to update post.' });
+    console.error("Error updating post:", error);
+    return res.status(500).json({ error: 'Server error while updating post.' });
   }
 });
 

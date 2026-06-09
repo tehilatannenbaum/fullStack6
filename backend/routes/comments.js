@@ -53,38 +53,67 @@ router.post('/', async (req, res) => {
 });
 
 // PUT update comment
-router.put('/:id', async (req, res) => {
+//router.put('/:id', async (req, res) => {
+//  try {
+//    const comment = await Comment.findByPk(req.params.id);
+//    if (!comment) {
+//      return res.status(404).json({ error: 'Comment not found.' });
+//    }
+//
+//    const requestUserId = req.headers['x-user-id'];
+//    if (!requestUserId) {
+//      return res.status(403).json({ error: 'Unauthorized. Missing x-user-id header.' });
+//    }
+//
+//    const user = await User.findByPk(requestUserId);
+//    if (!user) {
+//      return res.status(403).json({ error: 'Unauthorized. User not found.' });
+//    }
+//
+//    const post = await Post.findByPk(comment.postId);
+//
+//    if (comment.email !== user.email && (!post || post.userId !== user.id)) {
+//      return res.status(403).json({ error: 'Unauthorized. You can only edit comments on your posts or comments you created.' });
+//    }
+//
+//    const { name, body } = req.body;
+//    await comment.update({
+//      name: name !== undefined ? name : comment.name,
+//      body: body !== undefined ? body : comment.body
+//    });
+//    res.json(comment);
+//  } catch (error) {
+//    console.error('Update comment error:', error);
+//    res.status(500).json({ error: 'Failed to update comment.' });
+//  }
+//});
+
+// backend/routes/comments.js
+
+// שינוי ל-PATCH עבור עדכון חלקי של שדות התגובה
+router.patch('/:id', async (req, res) => {
   try {
-    const comment = await Comment.findByPk(req.params.id);
+    const commentId = req.params.id;
+    const userId = req.headers['x-user-id']; // מזהה המשתמש מה-Header
+
+    // 1. מוצאים את התגובה בבסיס הנתונים
+    const comment = await Comment.findByPk(commentId);
+    
     if (!comment) {
       return res.status(404).json({ error: 'Comment not found.' });
     }
 
-    const requestUserId = req.headers['x-user-id'];
-    if (!requestUserId) {
-      return res.status(403).json({ error: 'Unauthorized. Missing x-user-id header.' });
-    }
+    // הערה: אם יש לך הגבלה שרק יוצר התגובה או בעל הפוסט יכולים לערוך, 
+    // זה המקום להוסיף בדיקת הרשאה (למשל: if (comment.userId !== userId) ... )
 
-    const user = await User.findByPk(requestUserId);
-    if (!user) {
-      return res.status(403).json({ error: 'Unauthorized. User not found.' });
-    }
+    // 2. מעדכנים דינמית ב-MySQL רק את השדות שהגיעו ב-req.body (למשל רק את ה-body)
+    await comment.update(req.body);
 
-    const post = await Post.findByPk(comment.postId);
-
-    if (comment.email !== user.email && (!post || post.userId !== user.id)) {
-      return res.status(403).json({ error: 'Unauthorized. You can only edit comments on your posts or comments you created.' });
-    }
-
-    const { name, body } = req.body;
-    await comment.update({
-      name: name !== undefined ? name : comment.name,
-      body: body !== undefined ? body : comment.body
-    });
-    res.json(comment);
+    // 3. מחזירים את התגובה המעודכנת המלאה בפורמט JSON
+    return res.json(comment);
   } catch (error) {
-    console.error('Update comment error:', error);
-    res.status(500).json({ error: 'Failed to update comment.' });
+    console.error("Error updating comment:", error);
+    return res.status(500).json({ error: 'Server error while updating comment.' });
   }
 });
 

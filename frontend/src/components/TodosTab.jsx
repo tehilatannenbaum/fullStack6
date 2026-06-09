@@ -23,7 +23,6 @@ const TodosTab = ({ currentUser }) => {
     setLoading(true);
     setError('');
     try {
-      // Fetch only todos belonging to current user
       const response = await fetch(`http://localhost:5000/todos?userId=${currentUser.id}`);
       if (!response.ok) throw new Error('Failed to fetch todos.');
       const data = await response.json();
@@ -35,14 +34,16 @@ const TodosTab = ({ currentUser }) => {
     }
   };
 
+  // 1. תיקון פונקציית סימון ה-V: שולחת אך ורק את השדה completed שהשתנה
   const handleToggleCompleted = async (todo) => {
     try {
       const response = await fetch(`http://localhost:5000/todos/${todo.id}`, {
-        method: 'PUT',
+        method: 'PATCH', // שינוי ל-PATCH חסכוני
         headers: {
           'Content-Type': 'application/json',
+          'x-user-id': currentUser.id.toString(),
         },
-        body: JSON.stringify({ completed: !todo.completed }),
+        body: JSON.stringify({ completed: !todo.completed }), // שולחים רק שדה אחד!
       });
 
       if (!response.ok) throw new Error('Failed to update status.');
@@ -81,6 +82,7 @@ const TodosTab = ({ currentUser }) => {
     setModalOpen(true);
   };
 
+  // 2. תיקון פונקציית שמירת מודל העריכה: משווה ומסננת שדות
   const handleModalSubmit = async (e) => {
     e.preventDefault();
     if (!currentTodo.title.trim()) return;
@@ -95,7 +97,7 @@ const TodosTab = ({ currentUser }) => {
           },
           body: JSON.stringify({
             userId: currentUser.id,
-            title: currentTodo.title,
+            title: currentTodo.title.trim(),
             completed: false,
           }),
         });
@@ -104,15 +106,33 @@ const TodosTab = ({ currentUser }) => {
         const newTodo = await response.json();
         setTodos([...todos, newTodo]);
       } else {
+        // מציאת המשימה המקורית מה-state לפני העריכה בטופס
+        const originalTodo = todos.find(t => t.id === currentTodo.id);
+        
+        if (!originalTodo) return;
+
+        // בניית האובייקט המצומצם המכיל רק את מה שהשתנה בפועל
+        const updatedFields = {};
+        if (currentTodo.title.trim() !== originalTodo.title) {
+          updatedFields.title = currentTodo.title.trim();
+        }
+        if (currentTodo.completed !== originalTodo.completed) {
+          updatedFields.completed = currentTodo.completed;
+        }
+
+        // אופטימיזציה: אם לחצו שמירה בלי לשנות כלום, סוגרים את המודל ללא פנייה לרשת
+        if (Object.keys(updatedFields).length === 0) {
+          setModalOpen(false);
+          return;
+        }
+
         const response = await fetch(`http://localhost:5000/todos/${currentTodo.id}`, {
-          method: 'PUT',
+          method: 'PATCH', // שינוי ל-PATCH חסכוני
           headers: {
             'Content-Type': 'application/json',
+            'x-user-id': currentUser.id.toString(),
           },
-          body: JSON.stringify({
-            title: currentTodo.title,
-            completed: currentTodo.completed,
-          }),
+          body: JSON.stringify(updatedFields), // שולחים רק את השדות שהשתנו!
         });
 
         if (!response.ok) throw new Error('Failed to update todo.');
