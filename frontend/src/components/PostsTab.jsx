@@ -7,6 +7,7 @@ const PostsTab = ({ currentUser }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
+  const [viewMode, setViewMode] = useState('all'); // 'all' מציג את כולם, 'mine' מציג רק את שלי
 
   // Post Modal state
   const [postModalOpen, setPostModalOpen] = useState(false);
@@ -19,15 +20,24 @@ const PostsTab = ({ currentUser }) => {
   const [editingComment, setEditingComment] = useState(null); // { id, body, name }
   const [commentSubmitting, setCommentSubmitting] = useState(false);
 
+  // גורם לפונקציה לרוץ מחדש גם כשהמשתמש משנה את מצב התצוגה
   useEffect(() => {
     fetchPosts();
-  }, [currentUser]);
+  }, [currentUser, viewMode]);
 
   const fetchPosts = async () => {
     setLoading(true);
     setError('');
     try {
-      const response = await fetch(`http://localhost:5000/posts?userId=${currentUser.id}`);
+      // בניית הכתובת בצורה דינמית וחסכונית:
+      // אם viewMode הוא 'mine', נשרשר את ה-userId לסנן בשרת.
+      // אם viewMode הוא 'all', הכתובת תישאר רק /posts והשרת יחזיר את של כולם במכה אחת.
+      let url = 'http://localhost:5000/posts';
+      if (viewMode === 'mine') {
+        url += `?userId=${currentUser.id}`;
+      }
+
+      const response = await fetch(url);
       if (!response.ok) throw new Error('Failed to fetch posts.');
       const data = await response.json();
       setPosts(data);
@@ -95,7 +105,7 @@ const PostsTab = ({ currentUser }) => {
 
     setPostSubmitting(true);
     try {
-      if (postModalMode === 'add') {
+      if (postModalOpen && postModalMode === 'add') {
         const response = await fetch('http://localhost:5000/posts', {
           method: 'POST',
           headers: {
@@ -113,7 +123,8 @@ const PostsTab = ({ currentUser }) => {
         setPostModalOpen(false);
       } else {
         const originalPost = posts.find(p => p.id === currentPost.id);
-        
+        if (!originalPost) return;
+
         const updatedFields = {};
         if (currentPost.title.trim() !== originalPost.title) {
           updatedFields.title = currentPost.title.trim();
@@ -217,20 +228,16 @@ const PostsTab = ({ currentUser }) => {
     setEditingComment({ ...comment });
   };
 
- const handleEditCommentSubmit = async (e, postId) => {
+  const handleEditCommentSubmit = async (e, postId) => {
     e.preventDefault();
     if (!editingComment.body.trim()) return;
 
     setCommentSubmitting(true);
     try {
-      // 1. מוצאים את התגובה המקורית מתוך מפת התגובות הנוכחית ב-state
       const originalComment = (commentsMap[postId] || []).find(c => c.id === editingComment.id);
-      
       if (!originalComment) return;
 
-      // 2. בונים אובייקט חלקי ומכניסים אליו *רק* שדות שערכם שונה מהמקור
       const updatedFields = {};
-      
       if (editingComment.name && editingComment.name.trim() !== originalComment.name) {
         updatedFields.name = editingComment.name.trim();
       }
@@ -238,24 +245,18 @@ const PostsTab = ({ currentUser }) => {
         updatedFields.body = editingComment.body.trim();
       }
 
-      // בדיקת לוגים ב-Console: תוכלי לראות בלייב מה נשלח!
-      console.log("Original Comment:", originalComment);
-      console.log("Fields to send over network (PATCH):", updatedFields);
-
-      // 3. אופטימיזציה: אם לחצו שמירה בלי לשנות שום דבר, סוגרים את העריכה וחוסכים פנייה לרשת
       if (Object.keys(updatedFields).length === 0) {
         setEditingComment(null);
         return;
       }
 
-      // 4. שליחת בקשת PATCH חסכונית שמכילה אך ורק את השדות שהשתנו
       const response = await fetch(`http://localhost:5000/comments/${editingComment.id}`, {
-        method: 'PATCH', // מוודאים שזה PATCH
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           'x-user-id': currentUser.id.toString(),
         },
-        body: JSON.stringify(updatedFields), // שולחים רק את השדות שהשתנו בפועל!
+        body: JSON.stringify(updatedFields),
       });
 
       if (!response.ok) {
@@ -265,13 +266,12 @@ const PostsTab = ({ currentUser }) => {
 
       const updated = await response.json();
       
-      // 5. עדכון ה-state המקומי ב-React
       setCommentsMap(prev => ({
         ...prev,
         [postId]: (prev[postId] || []).map(c => c.id === editingComment.id ? updated : c)
       }));
       
-      setEditingComment(null); // יוצאים ממצב עריכה
+      setEditingComment(null);
     } catch (err) {
       alert(err.message);
     } finally {
@@ -287,7 +287,9 @@ const PostsTab = ({ currentUser }) => {
   return (
     <div>
       <div className="tab-header">
-        <h2 className="tab-title">Your Posts</h2>
+        <h2 className="tab-title">
+          {viewMode === 'mine' ? 'My Posts' : 'All Posts'}
+        </h2>
         <button className="btn btn-primary" onClick={openAddPostModal}>
           <span>+</span> Add Post
         </button>
@@ -295,8 +297,8 @@ const PostsTab = ({ currentUser }) => {
 
       {error && <div className="form-error" style={{ marginBottom: '1rem' }}>⚠️ {error}</div>}
 
-      <div className="controls-row">
-        <div className="search-box">
+      <div className="controls-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+        <div className="search-box" style={{ flex: '1', minWidth: '200px' }}>
           <input
             type="text"
             className="form-input"
@@ -304,6 +306,26 @@ const PostsTab = ({ currentUser }) => {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
+        </div>
+        
+        {/* כפתורי הסינון החדשים והחסכוניים ברשת */}
+        <div className="filter-buttons" style={{ display: 'flex', gap: '0.5rem' }}>
+          <button 
+            type="button"
+            className={`btn ${viewMode === 'all' ? 'btn-primary' : 'btn-secondary'}`}
+            style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}
+            onClick={() => setViewMode('all')}
+          >
+            All Posts
+          </button>
+          <button 
+            type="button"
+            className={`btn ${viewMode === 'mine' ? 'btn-primary' : 'btn-secondary'}`}
+            style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}
+            onClick={() => setViewMode('mine')}
+          >
+            My Posts
+          </button>
         </div>
       </div>
 
@@ -355,7 +377,7 @@ const PostsTab = ({ currentUser }) => {
                     💬 {isExpanded ? 'Hide Comments' : `Show Comments`}
                   </button>
                   <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                    Post ID: #{post.id}
+                    Post ID: #{post.id} (By User #{post.userId})
                   </span>
                 </div>
 
