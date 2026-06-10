@@ -20,24 +20,17 @@ const PostsTab = ({ currentUser }) => {
   const [editingComment, setEditingComment] = useState(null); // { id, body, name }
   const [commentSubmitting, setCommentSubmitting] = useState(false);
 
-  // גורם לפונקציה לרוץ מחדש גם כשהמשתמש משנה את מצב התצוגה
+  // אופטימיזציה: טוענים את הפוסטים פעם אחת בלבד בעת טעינת הרכיב (ולא בכל שינוי פילטר)
   useEffect(() => {
     fetchPosts();
-  }, [currentUser, viewMode]);
+  }, [currentUser]);
 
   const fetchPosts = async () => {
     setLoading(true);
     setError('');
     try {
-      // בניית הכתובת בצורה דינמית וחסכונית:
-      // אם viewMode הוא 'mine', נשרשר את ה-userId לסנן בשרת.
-      // אם viewMode הוא 'all', הכתובת תישאר רק /posts והשרת יחזיר את של כולם במכה אחת.
-      let url = 'http://localhost:5000/posts';
-      if (viewMode === 'mine') {
-        url += `?userId=${currentUser.id}`;
-      }
-
-      const response = await fetch(url);
+      // תמיד מביאים את כל הפוסטים של כולם כדי שנוכל לסנן אותם מקומית בזיכרון של React
+      const response = await fetch('http://localhost:5000/posts');
       if (!response.ok) throw new Error('Failed to fetch posts.');
       const data = await response.json();
       setPosts(data);
@@ -279,10 +272,20 @@ const PostsTab = ({ currentUser }) => {
     }
   };
 
-  const filteredPosts = posts.filter(post =>
-    post.title.toLowerCase().includes(search.toLowerCase()) ||
-    post.body.toLowerCase().includes(search.toLowerCase())
-  );
+  // אופטימיזציה קריטית: סינון מקומי כפול וחכם בזיכרון של הדפדפן ללא בקשות רשת מיותרות!
+  const filteredPosts = posts.filter(post => {
+    // 1. סינון ראשון: לפי מצב התצוגה (כל הפוסטים או רק הפוסטים שלי)
+    if (viewMode === 'mine' && post.userId !== currentUser.id) {
+      return false;
+    }
+    
+    // 2. סינון שני: לפי מילות החיפוש שהוזנו בתיבה
+    const matchesSearch = 
+      post.title.toLowerCase().includes(search.toLowerCase()) ||
+      post.body.toLowerCase().includes(search.toLowerCase());
+
+    return matchesSearch;
+  });
 
   return (
     <div>
@@ -377,7 +380,7 @@ const PostsTab = ({ currentUser }) => {
                     💬 {isExpanded ? 'Hide Comments' : `Show Comments`}
                   </button>
                   <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                    Post ID: #{post.id} (By User #{post.userId})
+                    Post ID: #{post.id} {post.userId === currentUser.id ? '(Your Post)' : `(By User #${post.userId})`}
                   </span>
                 </div>
 
