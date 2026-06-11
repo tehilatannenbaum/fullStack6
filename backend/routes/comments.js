@@ -109,8 +109,8 @@ router.patch('/:id', async (req, res) => {
     // 2. מעדכנים דינמית ב-MySQL רק את השדות שהגיעו ב-req.body (למשל רק את ה-body)
     await comment.update(req.body);
 
-    // 3. מחזירים את התגובה המעודכנת המלאה בפורמט JSON
-    return res.json(comment);
+    // 3. מחזירים סטטוס הצלחה JSON
+    return res.status(204).send();
   } catch (error) {
     console.error("Error updating comment:", error);
     return res.status(500).json({ error: 'Server error while updating comment.' });

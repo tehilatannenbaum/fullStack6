@@ -132,22 +132,24 @@ const PostsTab = ({ currentUser }) => {
         }
 
         const response = await fetch(`http://localhost:5000/posts/${currentPost.id}`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-user-id': currentUser.id.toString(),
-          },
-          body: JSON.stringify(updatedFields),
-        });
-        
-        if (!response.ok) {
-          const errData = await response.json();
-          throw new Error(errData.error || 'Failed to update post.');
-        }
-        
-        const updatedPost = await response.json();
-        setPosts(posts.map(p => p.id === currentPost.id ? updatedPost : p));
-        setPostModalOpen(false);
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': currentUser.id.toString(),
+        },
+        body: JSON.stringify(updatedFields),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || 'Failed to update post.');
+      }
+
+      // עדכון ה-state המקומי ב-React ללא תלות בתשובת השרת (כי קיבלנו רק 204)
+      setPosts(posts.map(p => 
+        p.id === currentPost.id ? { ...p, ...updatedFields } : p
+      ));
+      setPostModalOpen(false);
       }
     } catch (err) {
       alert(err.message);
@@ -243,6 +245,7 @@ const PostsTab = ({ currentUser }) => {
         return;
       }
 
+      // שליחת בקשת PATCH לשרת ללא צפייה לתגובת JSON
       const response = await fetch(`http://localhost:5000/comments/${editingComment.id}`, {
         method: 'PATCH',
         headers: {
@@ -257,11 +260,12 @@ const PostsTab = ({ currentUser }) => {
         throw new Error(errData.error || 'Failed to update comment.');
       }
 
-      const updated = await response.json();
-      
+      // עדכון ה-state המקומי ב-React ללא תלות בתשובת השרת
       setCommentsMap(prev => ({
         ...prev,
-        [postId]: (prev[postId] || []).map(c => c.id === editingComment.id ? updated : c)
+        [postId]: (prev[postId] || []).map(c => 
+          c.id === editingComment.id ? { ...c, ...updatedFields } : c
+        )
       }));
       
       setEditingComment(null);

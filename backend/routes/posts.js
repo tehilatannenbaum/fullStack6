@@ -91,8 +91,8 @@ router.patch('/:id', async (req, res) => {
     // 2. מעדכנים רק את השדות שהגיעו ב-req.body
     await post.update(req.body);
 
-    // 3. מחזירים את האובייקט המעודכן
-    return res.json(post);
+    // 3. מחזירים סטטוס הצלחה JSON
+    return res.status(204).send();
   } catch (error) {
     console.error("Error updating post:", error);
     return res.status(500).json({ error: 'Server error while updating post.' });
