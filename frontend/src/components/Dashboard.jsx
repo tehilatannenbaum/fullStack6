@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import TodosTab from './TodosTab.jsx';
 import PostsTab from './PostsTab.jsx';
+import AlbumsTab from './AlbumsTab.jsx';
 
 const Dashboard = ({ currentUser, onLogout }) => {
-  const [activeTab, setActiveTab] = useState('todos'); // todos, posts
+  const [activeTab, setActiveTab] = useState('todos'); // todos, posts, albums
   const [infoModalOpen, setInfoModalOpen] = useState(false);
 
   // Synchronize hash routing with active tab
@@ -18,6 +19,8 @@ const Dashboard = ({ currentUser, onLogout }) => {
       const hash = window.location.hash;
       if (hash.endsWith('/posts')) {
         setActiveTab('posts');
+      } else if (hash.endsWith('/albums')) {
+        setActiveTab('albums');
       } else {
         setActiveTab('todos');
       }
@@ -63,14 +66,18 @@ const Dashboard = ({ currentUser, onLogout }) => {
           >
             ✍️ Posts & Comments
           </button>
+          <button
+            className={`sidebar-btn ${activeTab === 'albums' ? 'active' : ''}`}
+            onClick={() => setActiveTab('albums')}
+          >
+            📸 Albums & Photos
+          </button>
         </aside>
 
         <main className="main-content">
-          {activeTab === 'todos' ? (
-            <TodosTab currentUser={currentUser} />
-          ) : (
-            <PostsTab currentUser={currentUser} />
-          )}
+          {activeTab === 'todos' && <TodosTab currentUser={currentUser} />}
+          {activeTab === 'posts' && <PostsTab currentUser={currentUser} />}
+          {activeTab === 'albums' && <AlbumsTab currentUser={currentUser} />}
         </main>
       </div>
 
