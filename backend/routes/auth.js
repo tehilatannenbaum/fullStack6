@@ -53,6 +53,8 @@ router.post('/register', async (req, res) => {
         email: user.email,
         phone: user.phone,
         website: user.website,
+        isAdmin: user.isAdmin,
+        isBlocked: user.isBlocked,
       }
     });
   } catch (error) {
@@ -85,6 +87,10 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid username or password.' });
     }
 
+    if (user.isBlocked) {
+      return res.status(403).json({ error: 'Your account is blocked. Please contact the administrator.' });
+    }
+
     // Return mock token and public user details
     res.json({
       token: `auth-token-${user.id}-${Date.now()}`,
@@ -95,6 +101,8 @@ router.post('/login', async (req, res) => {
         email: user.email,
         phone: user.phone,
         website: user.website,
+        isAdmin: user.isAdmin,
+        isBlocked: user.isBlocked,
       }
     });
   } catch (error) {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import TodosTab from './TodosTab.jsx';
 import PostsTab from './PostsTab.jsx';
 import AlbumsTab from './AlbumsTab.jsx';
+import AdminTab from './AdminTab.jsx';
 
 const Dashboard = ({ currentUser, onLogout }) => {
   const [activeTab, setActiveTab] = useState('todos'); // todos, posts, albums
@@ -21,6 +22,8 @@ const Dashboard = ({ currentUser, onLogout }) => {
         setActiveTab('posts');
       } else if (hash.endsWith('/albums')) {
         setActiveTab('albums');
+      } else if (hash.endsWith('/admin') && currentUser.isAdmin) {
+        setActiveTab('admin');
       } else {
         setActiveTab('todos');
       }
@@ -72,12 +75,21 @@ const Dashboard = ({ currentUser, onLogout }) => {
           >
             📸 Albums & Photos
           </button>
+          {currentUser.isAdmin && (
+            <button
+              className={`sidebar-btn ${activeTab === 'admin' ? 'active' : ''}`}
+              onClick={() => setActiveTab('admin')}
+            >
+              🛡️ Admin Panel
+            </button>
+          )}
         </aside>
 
         <main className="main-content">
           {activeTab === 'todos' && <TodosTab currentUser={currentUser} />}
           {activeTab === 'posts' && <PostsTab currentUser={currentUser} />}
           {activeTab === 'albums' && <AlbumsTab currentUser={currentUser} />}
+          {activeTab === 'admin' && currentUser.isAdmin && <AdminTab currentUser={currentUser} />}
         </main>
       </div>
 

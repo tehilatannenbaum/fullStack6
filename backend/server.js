@@ -12,6 +12,7 @@ import postRoutes from './routes/posts.js';
 import commentRoutes from './routes/comments.js';
 import albumRoutes from './routes/albums.js';
 import photoRoutes from './routes/photos.js';
+import adminRoutes from './routes/admin.js';
 
 dotenv.config();
 
@@ -29,6 +30,7 @@ app.use('/posts', postRoutes);
 app.use('/comments', commentRoutes);
 app.use('/albums', albumRoutes);
 app.use('/photos', photoRoutes);
+app.use('/admin', adminRoutes);
 
 // Helper function to seed database if empty
 const seedDatabase = async () => {
@@ -104,6 +106,25 @@ const seedDatabase = async () => {
       console.log('Users already exist in database. Skipping base seeding.');
     }
 
+    // Ensure system admin user exists
+    const adminExists = await User.findOne({ where: { username: 'admin' } });
+    if (!adminExists) {
+      console.log('Seeding default admin user (admin/123456)...');
+      const salt = await bcrypt.genSalt(10);
+      const defaultPasswordHash = await bcrypt.hash('123456', salt);
+      const adminUser = await User.create({
+        name: 'System Admin',
+        username: 'admin',
+        email: 'admin@system.com',
+        phone: '123-456-7890',
+        website: 'admin.com',
+        isAdmin: true,
+        isBlocked: false,
+      });
+      await Password.create({ userId: adminUser.id, passwordHash: defaultPasswordHash });
+      console.log('System admin user created successfully.');
+    }
+
     const albumCount = await Album.count();
     if (albumCount === 0) {
       console.log('Seeding database with initial Album & Photo mock data...');
@@ -154,7 +175,7 @@ const ensureDatabaseExists = async () => {
 
 // Sync database and start server
 ensureDatabaseExists()
-  .then(() => sequelize.sync({ force: false }))
+  .then(() => sequelize.sync({ alter: true }))
   .then(async () => {
     console.log('Database connection synced successfully.');
     await seedDatabase();
