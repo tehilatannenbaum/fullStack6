@@ -244,29 +244,27 @@ const AdminTab = ({ currentUser }) => {
                 </div>
 
                 {/* Actions Section */}
-                <div style={{ marginTop: 'auto', paddingTop: '0.8rem', borderTop: '1px solid rgba(15, 23, 42, 0.05)' }}>
-                  <button
-                    className={`btn ${user.isBlocked ? 'btn-success' : 'btn-danger'}`}
-                    style={{ 
-                      width: '100%',
-                      padding: '0.5rem 1rem',
-                      fontSize: '0.9rem',
-                      backgroundColor: isSelf 
-                        ? 'rgba(15, 23, 42, 0.1)' 
-                        : user.isBlocked 
+                {!isSelf && (
+                  <div style={{ marginTop: 'auto', paddingTop: '0.8rem', borderTop: '1px solid rgba(15, 23, 42, 0.05)' }}>
+                    <button
+                      className={`btn ${user.isBlocked ? 'btn-success' : 'btn-danger'}`}
+                      style={{ 
+                        width: '100%',
+                        padding: '0.5rem 1rem',
+                        fontSize: '0.9rem',
+                        backgroundColor: user.isBlocked 
                           ? 'var(--color-success)' 
                           : 'var(--color-accent)',
-                      color: isSelf ? 'rgba(15, 23, 42, 0.4)' : '#fff',
-                      cursor: isSelf ? 'not-allowed' : 'pointer',
-                      border: 'none',
-                      opacity: isSelf ? 0.6 : 1
-                    }}
-                    onClick={() => handleToggleBlock(user)}
-                    disabled={isSelf}
-                  >
-                    {user.isBlocked ? '🔓 Unblock User' : '🚫 Block User'}
-                  </button>
-                </div>
+                        color: '#fff',
+                        cursor: 'pointer',
+                        border: 'none'
+                      }}
+                      onClick={() => handleToggleBlock(user)}
+                    >
+                      {user.isBlocked ? '🔓 Unblock User' : '🚫 Block User'}
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })}
