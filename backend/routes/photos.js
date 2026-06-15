@@ -44,7 +44,7 @@ router.post('/', async (req, res) => {
       title,
       url
     });
-    res.status(201).json(photo);
+    res.status(201).json({ success: true, id: photo.id });
   } catch (error) {
     console.error('Create photo error:', error);
     res.status(500).json({ error: 'Failed to create photo.' });

@@ -45,7 +45,7 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'postId, name, email, and body are required.' });
     }
     const comment = await Comment.create({ postId, name, email, body });
-    res.status(201).json(comment);
+    res.status(201).json({ success: true, id: comment.id });
   } catch (error) {
     console.error('Create comment error:', error);
     res.status(500).json({ error: 'Failed to create comment.' });

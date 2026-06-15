@@ -160,7 +160,12 @@ const AlbumsTab = ({ currentUser }) => {
           }),
         });
         if (!response.ok) throw new Error('Failed to create album.');
-        const newAlbum = await response.json();
+        const resData = await response.json();
+        const newAlbum = {
+          id: resData.id,
+          userId: currentUser.id,
+          title: currentAlbum.title.trim(),
+        };
         setAlbums([...albums, newAlbum]);
       } else {
         const originalAlbum = albums.find(a => a.id === currentAlbum.id);
@@ -244,7 +249,13 @@ const AlbumsTab = ({ currentUser }) => {
           }),
         });
         if (!response.ok) throw new Error('Failed to add photo.');
-        const newPhoto = await response.json();
+        const resData = await response.json();
+        const newPhoto = {
+          id: resData.id,
+          albumId: selectedAlbum.id,
+          title: currentPhoto.title.trim(),
+          url: currentPhoto.url.trim()
+        };
         setPhotos([...photos, newPhoto]);
       } else {
         const originalPhoto = photos.find(p => p.id === currentPhoto.id);

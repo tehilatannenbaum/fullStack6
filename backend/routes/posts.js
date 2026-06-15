@@ -68,7 +68,7 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'userId, title, and body are required.' });
     }
     const post = await Post.create({ userId, title, body });
-    res.status(201).json(post);
+    res.status(201).json({ success: true, id: post.id });
   } catch (error) {
     console.error('Create post error:', error);
     res.status(500).json({ error: 'Failed to create post.' });

@@ -65,7 +65,7 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'userId and title are required.' });
     }
     const album = await Album.create({ userId, title });
-    res.status(201).json(album);
+    res.status(201).json({ success: true, id: album.id });
   } catch (error) {
     console.error('Create album error:', error);
     res.status(500).json({ error: 'Failed to create album.' });

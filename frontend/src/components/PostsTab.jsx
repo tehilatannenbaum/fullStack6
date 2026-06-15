@@ -111,7 +111,13 @@ const PostsTab = ({ currentUser }) => {
           }),
         });
         if (!response.ok) throw new Error('Failed to create post.');
-        const newPost = await response.json();
+        const resData = await response.json();
+        const newPost = {
+          id: resData.id,
+          userId: currentUser.id,
+          title: currentPost.title,
+          body: currentPost.body,
+        };
         setPosts([...posts, newPost]);
         setPostModalOpen(false);
       } else {
@@ -180,7 +186,14 @@ const PostsTab = ({ currentUser }) => {
       });
 
       if (!response.ok) throw new Error('Failed to post comment.');
-      const newComment = await response.json();
+      const resData = await response.json();
+      const newComment = {
+        id: resData.id,
+        postId,
+        name: currentUser.name,
+        email: currentUser.email,
+        body: commentBody,
+      };
       
       const existingComments = commentsMap[postId] || [];
       setCommentsMap(prev => ({

@@ -103,7 +103,13 @@ const TodosTab = ({ currentUser }) => {
         });
 
         if (!response.ok) throw new Error('Failed to create todo.');
-        const newTodo = await response.json();
+        const resData = await response.json();
+        const newTodo = {
+          id: resData.id,
+          userId: currentUser.id,
+          title: currentTodo.title.trim(),
+          completed: false,
+        };
         setTodos([...todos, newTodo]);
       } else {
         // מציאת המשימה המקורית מה-state לפני העריכה בטופס
