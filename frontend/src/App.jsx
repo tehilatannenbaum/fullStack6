@@ -41,6 +41,11 @@ function App() {
     window.location.hash = '';
   };
 
+  const handleUserUpdate = (updatedUser) => {
+    setCurrentUser(updatedUser);
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+  };
+
   if (checkingSession) {
     return (
       <div style={{
@@ -60,6 +65,7 @@ function App() {
       <Dashboard
         currentUser={currentUser}
         onLogout={handleLogout}
+        onUserUpdate={handleUserUpdate}
       />
     );
   }

@@ -111,4 +111,41 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// CHANGE PASSWORD
+router.put('/change-password', async (req, res) => {
+  try {
+    const userId = req.headers['x-user-id'];
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized. Missing x-user-id header.' });
+    }
+
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Current password and new password are required.' });
+    }
+
+    const userPassword = await Password.findOne({ where: { userId } });
+    if (!userPassword) {
+      return res.status(404).json({ error: 'User password not found.' });
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, userPassword.passwordHash);
+    if (!isMatch) {
+      return res.status(400).json({ error: 'Incorrect current password.' });
+    }
+
+    // Hash the new password
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(newPassword, salt);
+
+    // Update the password hash
+    await userPassword.update({ passwordHash });
+
+    res.json({ message: 'Password changed successfully.' });
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
 export default router;
