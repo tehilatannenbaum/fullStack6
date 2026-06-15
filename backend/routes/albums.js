@@ -1,5 +1,5 @@
 import express from 'express';
-import { Album, Photo } from '../models/index.js';
+import { sequelize, Album, Photo } from '../models/index.js';
 
 const router = express.Router();
 
@@ -102,8 +102,19 @@ router.delete('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Album not found or unauthorized.' });
     }
 
-    await album.destroy();
-    res.json({ message: 'Album deleted successfully.' });
+    // Perform deletion of photos and album inside a transaction in the correct order
+    await sequelize.transaction(async (t) => {
+      // 1. Delete all photos associated with this album
+      await Photo.destroy({
+        where: { albumId: album.id },
+        transaction: t
+      });
+
+      // 2. Delete the album itself
+      await album.destroy({ transaction: t });
+    });
+
+    res.json({ message: 'Album and its photos deleted successfully.' });
   } catch (error) {
     console.error('Delete album error:', error);
     res.status(500).json({ error: 'Failed to delete album.' });

@@ -1,5 +1,5 @@
 import express from 'express';
-import { Post, Comment } from '../models/index.js';
+import { sequelize, Post, Comment } from '../models/index.js';
 
 const router = express.Router();
 
@@ -112,8 +112,19 @@ router.delete('/:id', async (req, res) => {
       return res.status(403).json({ error: 'Unauthorized. You can only delete your own posts.' });
     }
 
-    await post.destroy();
-    res.json({ message: 'Post deleted successfully.' });
+    // Perform deletion of comments and post inside a transaction in the correct order
+    await sequelize.transaction(async (t) => {
+      // 1. Delete all comments associated with this post
+      await Comment.destroy({
+        where: { postId: post.id },
+        transaction: t
+      });
+
+      // 2. Delete the post itself
+      await post.destroy({ transaction: t });
+    });
+
+    res.json({ message: 'Post and its comments deleted successfully.' });
   } catch (error) {
     console.error('Delete post error:', error);
     res.status(500).json({ error: 'Failed to delete post.' });
