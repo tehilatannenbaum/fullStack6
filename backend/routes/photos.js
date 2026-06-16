@@ -68,7 +68,7 @@ router.patch('/:id', async (req, res) => {
     }
 
     await photo.update(req.body);
-    return res.status(204).send();
+    res.status(200).json({ success: true, id: photo.id });
   } catch (error) {
     console.error('Update photo error:', error);
     res.status(500).json({ error: 'Failed to update photo.' });

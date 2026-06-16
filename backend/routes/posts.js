@@ -92,7 +92,7 @@ router.patch('/:id', async (req, res) => {
     await post.update(req.body);
 
     // 3. מחזירים סטטוס הצלחה JSON
-    return res.status(204).send();
+    res.status(200).json({ success: true, id: post.id });
   } catch (error) {
     console.error("Error updating post:", error);
     return res.status(500).json({ error: 'Server error while updating post.' });

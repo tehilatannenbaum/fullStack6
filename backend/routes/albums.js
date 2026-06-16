@@ -84,7 +84,7 @@ router.patch('/:id', async (req, res) => {
     }
 
     await album.update(req.body);
-    return res.status(204).send();
+    res.status(200).json({ success: true, id: album.id });
   } catch (error) {
     console.error('Update album error:', error);
     res.status(500).json({ error: 'Failed to update album.' });
