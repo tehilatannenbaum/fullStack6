@@ -8,7 +8,7 @@ router.get('/', async (req, res) => {
   try {
     const filters = req.query;
     const where = {};
-    
+
     Object.keys(filters).forEach(key => {
       if (key === 'completed') {
         where[key] = filters[key] === 'true';
@@ -91,7 +91,7 @@ router.patch('/:id', async (req, res) => {
 
     // 1. מוצאים את המשימה בבסיס הנתונים ומוודאים שהיא שייכת למשתמש
     const todo = await Todo.findOne({ where: { id: todoId, userId: userId } });
-    
+
     if (!todo) {
       return res.status(404).json({ error: 'Task not found or unauthorized.' });
     }
@@ -101,7 +101,8 @@ router.patch('/:id', async (req, res) => {
     await todo.update(req.body);
 
     // 3. מחזירים את המשימה המעודכת המלאה בפורמט JSON
-    return res.json(todo);
+    return res.json({ success: true });
+    //return res.json(todo);
   } catch (error) {
     console.error("Error updating task:", error);
     return res.status(500).json({ error: 'Server error while updating task.' });
@@ -116,7 +117,8 @@ router.delete('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Todo not found.' });
     }
     await todo.destroy();
-    res.json({ message: 'Todo deleted successfully.' });
+    res.json({ success: true });
+    //res.json({ message: 'Todo deleted successfully.' });
   } catch (error) {
     console.error('Delete todo error:', error);
     res.status(500).json({ error: 'Failed to delete todo.' });

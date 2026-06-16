@@ -4,7 +4,7 @@ const TodosTab = ({ currentUser }) => {
   const [todos, setTodos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
+
   // Search & Filter state
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all'); // all, completed, pending
@@ -15,15 +15,21 @@ const TodosTab = ({ currentUser }) => {
   const [currentTodo, setCurrentTodo] = useState({ id: null, title: '', completed: false });
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    fetchTodos();
-  }, [currentUser]);
 
-  const fetchTodos = async () => {
+
+  const userId = currentUser?.id;
+
+  useEffect(() => {
+    if (userId) {
+      fetchTodos(userId);
+    }
+  }, [userId]);
+
+  const fetchTodos = async (userId) => {
     setLoading(true);
     setError('');
     try {
-      const response = await fetch(`http://localhost:5000/todos?userId=${currentUser.id}`);
+      const response = await fetch(`http://localhost:5000/todos?userId=${userId}`);
       if (!response.ok) throw new Error('Failed to fetch todos.');
       const data = await response.json();
       setTodos(data);
@@ -47,9 +53,16 @@ const TodosTab = ({ currentUser }) => {
       });
 
       if (!response.ok) throw new Error('Failed to update status.');
-      
-      const updated = await response.json();
-      setTodos(todos.map(t => t.id === todo.id ? updated : t));
+
+      const result = await response.json();
+
+      if (result.success) {
+        setTodos(todos.map(t =>
+          t.id === todo.id
+            ? { ...t, completed: !t.completed }
+            : t
+        ));
+      }
     } catch (err) {
       alert(err.message);
     }
@@ -57,7 +70,7 @@ const TodosTab = ({ currentUser }) => {
 
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this todo?')) return;
-    
+
     try {
       const response = await fetch(`http://localhost:5000/todos/${id}`, {
         method: 'DELETE',
@@ -114,7 +127,7 @@ const TodosTab = ({ currentUser }) => {
       } else {
         // מציאת המשימה המקורית מה-state לפני העריכה בטופס
         const originalTodo = todos.find(t => t.id === currentTodo.id);
-        
+
         if (!originalTodo) return;
 
         // בניית האובייקט המצומצם המכיל רק את מה שהשתנה בפועל
@@ -142,8 +155,15 @@ const TodosTab = ({ currentUser }) => {
         });
 
         if (!response.ok) throw new Error('Failed to update todo.');
-        const updatedTodo = await response.json();
-        setTodos(todos.map(t => t.id === currentTodo.id ? updatedTodo : t));
+        const result = await response.json();
+
+        if (result.success) {
+          setTodos(todos.map(t =>
+            t.id === currentTodo.id
+              ? { ...t, ...updatedFields }
+              : t
+          ));
+        }
       }
       setModalOpen(false);
     } catch (err) {
@@ -245,7 +265,7 @@ const TodosTab = ({ currentUser }) => {
           <div className="glass-panel modal-content">
             <button className="modal-close" onClick={() => setModalOpen(false)}>×</button>
             <h3 className="modal-title">{modalMode === 'add' ? 'Add New Task' : 'Edit Task'}</h3>
-            
+
             <form onSubmit={handleModalSubmit}>
               <div className="form-group">
                 <label className="form-label" htmlFor="todo-title">Task Title</label>

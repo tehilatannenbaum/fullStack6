@@ -72,8 +72,18 @@ const Dashboard = ({ currentUser, onLogout, onUserUpdate }) => {
         throw new Error(errData.error || 'Failed to update profile.');
       }
 
-      const updatedUser = await response.json();
-      onUserUpdate(updatedUser);
+      const result = await response.json();
+
+      if (result.success) {
+        onUserUpdate({
+          ...currentUser,
+          name: editForm.name.trim(),
+          username: editForm.username.trim(),
+          email: editForm.email.trim(),
+          phone: editForm.phone.trim(),
+          website: editForm.website.trim()
+        });
+      }
       setIsEditingProfile(false);
       alert('Profile updated successfully.');
     } catch (err) {
@@ -223,7 +233,7 @@ const Dashboard = ({ currentUser, onLogout, onUserUpdate }) => {
                   ? '✏️ Edit Personal Profile'
                   : '👤 Personal Profile Details'}
             </h3>
-            
+
             {!isEditingProfile && !isChangingPassword ? (
               <>
                 <div className="info-grid">

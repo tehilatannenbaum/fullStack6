@@ -13,7 +13,7 @@ function App() {
     // Check if user session exists in LocalStorage
     const storedUser = localStorage.getItem('user');
     const token = localStorage.getItem('token');
-    
+
     if (storedUser && token) {
       try {
         setCurrentUser(JSON.parse(storedUser));
@@ -42,8 +42,15 @@ function App() {
   };
 
   const handleUserUpdate = (updatedUser) => {
-    setCurrentUser(updatedUser);
-    localStorage.setItem('user', JSON.stringify(updatedUser));
+    const mergedUser = {
+      ...currentUser,
+      ...updatedUser
+    };
+
+    delete mergedUser.success;
+
+    setCurrentUser(mergedUser);
+    localStorage.setItem('user', JSON.stringify(mergedUser));
   };
 
   if (checkingSession) {

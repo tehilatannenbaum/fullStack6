@@ -42,7 +42,7 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Name, username, and email are required.' });
     }
     const user = await User.create({ name, username, email, phone, website });
-    res.status(201).json(user);
+    res.status(201).json({ success: true, id: user.id });
   } catch (error) {
     console.error('Create user error:', error);
     res.status(500).json({ error: 'Failed to create user.' });
@@ -58,7 +58,7 @@ router.put('/:id', async (req, res) => {
     }
     const { name, username, email, phone, website } = req.body;
     await user.update({ name, username, email, phone, website });
-    res.json(user);
+    res.json({ success: true });
   } catch (error) {
     console.error('Update user error:', error);
     res.status(500).json({ error: 'Failed to update user.' });
@@ -73,7 +73,7 @@ router.delete('/:id', async (req, res) => {
       return res.status(404).json({ error: 'User not found.' });
     }
     await user.destroy();
-    res.json({ message: 'User deleted successfully.' });
+    res.json({ success: true });
   } catch (error) {
     console.error('Delete user error:', error);
     res.status(500).json({ error: 'Failed to delete user.' });
