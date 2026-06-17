@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
-const TodosTab = ({ currentUser }) => {
-  const [todos, setTodos] = useState([]);
-  const [loading, setLoading] = useState(true);
+const TodosTab = ({ currentUser, todos, setTodos }) => {
+  const [loading, setLoading] = useState(todos === null);
   const [error, setError] = useState('');
 
   // Search & Filter state
@@ -15,15 +14,15 @@ const TodosTab = ({ currentUser }) => {
   const [currentTodo, setCurrentTodo] = useState({ id: null, title: '', completed: false });
   const [submitting, setSubmitting] = useState(false);
 
-
-
   const userId = currentUser?.id;
 
   useEffect(() => {
-    if (userId) {
+    if (userId && todos === null) {
       fetchTodos(userId);
+    } else if (todos !== null) {
+      setLoading(false);
     }
-  }, [userId]);
+  }, [userId, todos]);
 
   const fetchTodos = async (userId) => {
     setLoading(true);
@@ -174,7 +173,8 @@ const TodosTab = ({ currentUser }) => {
   };
 
   // Filter & search computation
-  const filteredTodos = todos.filter(todo => {
+  const activeTodos = todos || [];
+  const filteredTodos = activeTodos.filter(todo => {
     const matchesSearch = todo.title.toLowerCase().includes(search.toLowerCase());
     if (filter === 'completed') return matchesSearch && todo.completed;
     if (filter === 'pending') return matchesSearch && !todo.completed;
@@ -208,9 +208,9 @@ const TodosTab = ({ currentUser }) => {
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
           >
-            <option value="all">All ({todos.length})</option>
-            <option value="completed">Completed ({todos.filter(t => t.completed).length})</option>
-            <option value="pending">Pending ({todos.filter(t => !t.completed).length})</option>
+            <option value="all">All ({activeTodos.length})</option>
+            <option value="completed">Completed ({activeTodos.filter(t => t.completed).length})</option>
+            <option value="pending">Pending ({activeTodos.filter(t => !t.completed).length})</option>
           </select>
         </div>
       </div>

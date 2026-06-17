@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
 
-const PostsTab = ({ currentUser }) => {
-  const [posts, setPosts] = useState([]);
-  const [commentsMap, setCommentsMap] = useState({}); // { postId: [comments] }
+const PostsTab = ({ currentUser, posts, setPosts, commentsMap, setCommentsMap }) => {
   const [expandedPosts, setExpandedPosts] = useState({}); // { postId: boolean }
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(posts === null);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState('all'); // 'all' מציג את כולם, 'mine' מציג רק את שלי
@@ -22,8 +20,12 @@ const PostsTab = ({ currentUser }) => {
 
   // אופטימיזציה: טוענים את הפוסטים פעם אחת בלבד בעת טעינת הרכיב (ולא בכל שינוי פילטר)
   useEffect(() => {
-    fetchPosts();
-  }, [currentUser]);
+    if (posts === null) {
+      fetchPosts();
+    } else {
+      setLoading(false);
+    }
+  }, [posts]);
 
   const fetchPosts = async () => {
     setLoading(true);
@@ -290,7 +292,8 @@ const PostsTab = ({ currentUser }) => {
   };
 
   // אופטימיזציה קריטית: סינון מקומי כפול וחכם בזיכרון של הדפדפן ללא בקשות רשת מיותרות!
-  const filteredPosts = posts.filter(post => {
+  const activePosts = posts || [];
+  const filteredPosts = activePosts.filter(post => {
     // 1. סינון ראשון: לפי מצב התצוגה (כל הפוסטים או רק הפוסטים שלי)
     if (viewMode === 'mine' && post.userId !== currentUser.id) {
       return false;

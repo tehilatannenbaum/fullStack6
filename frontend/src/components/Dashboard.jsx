@@ -25,6 +25,12 @@ const Dashboard = ({ currentUser, onLogout, onUserUpdate }) => {
   });
   const [passwordSaving, setPasswordSaving] = useState(false);
 
+  // Lifted states to cache data between tab changes
+  const [todos, setTodos] = useState(null);
+  const [posts, setPosts] = useState(null);
+  const [albums, setAlbums] = useState(null);
+  const [commentsMap, setCommentsMap] = useState({});
+
   // Sync profile edit form when modal opens or currentUser changes
   useEffect(() => {
     if (infoModalOpen) {
@@ -214,9 +220,29 @@ const Dashboard = ({ currentUser, onLogout, onUserUpdate }) => {
         </aside>
 
         <main className="main-content">
-          {activeTab === 'todos' && <TodosTab currentUser={currentUser} />}
-          {activeTab === 'posts' && <PostsTab currentUser={currentUser} />}
-          {activeTab === 'albums' && <AlbumsTab currentUser={currentUser} />}
+          {activeTab === 'todos' && (
+            <TodosTab 
+              currentUser={currentUser} 
+              todos={todos} 
+              setTodos={setTodos} 
+            />
+          )}
+          {activeTab === 'posts' && (
+            <PostsTab 
+              currentUser={currentUser} 
+              posts={posts} 
+              setPosts={setPosts} 
+              commentsMap={commentsMap}
+              setCommentsMap={setCommentsMap}
+            />
+          )}
+          {activeTab === 'albums' && (
+            <AlbumsTab 
+              currentUser={currentUser} 
+              albums={albums} 
+              setAlbums={setAlbums} 
+            />
+          )}
           {activeTab === 'admin' && currentUser.isAdmin && <AdminTab currentUser={currentUser} />}
         </main>
       </div>

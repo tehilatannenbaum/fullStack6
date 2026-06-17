@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
-const AlbumsTab = ({ currentUser }) => {
-  const [albums, setAlbums] = useState([]);
-  const [loadingAlbums, setLoadingAlbums] = useState(true);
+const AlbumsTab = ({ currentUser, albums, setAlbums }) => {
+  const [loadingAlbums, setLoadingAlbums] = useState(albums === null);
   const [albumsError, setAlbumsError] = useState('');
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState('all'); // 'all' or 'mine'
@@ -43,8 +42,12 @@ const AlbumsTab = ({ currentUser }) => {
   };
 
   useEffect(() => {
-    fetchAlbums();
-  }, [currentUser]);
+    if (albums === null) {
+      fetchAlbums();
+    } else {
+      setLoadingAlbums(false);
+    }
+  }, [albums]);
 
   // Fetch all albums from backend
   const fetchAlbums = async () => {
@@ -136,7 +139,7 @@ const AlbumsTab = ({ currentUser }) => {
         const errData = await response.json();
         throw new Error(errData.error || 'Failed to delete album.');
       }
-      setAlbums(albums.filter(a => a.id !== albumId));
+      setAlbums(prev => (prev || []).filter(a => a.id !== albumId));
     } catch (err) {
       alert(err.message);
     }
@@ -166,9 +169,9 @@ const AlbumsTab = ({ currentUser }) => {
           userId: currentUser.id,
           title: currentAlbum.title.trim(),
         };
-        setAlbums([...albums, newAlbum]);
+        setAlbums(prev => [...(prev || []), newAlbum]);
       } else {
-        const originalAlbum = albums.find(a => a.id === currentAlbum.id);
+        const originalAlbum = (albums || []).find(a => a.id === currentAlbum.id);
         if (originalAlbum && originalAlbum.title === currentAlbum.title.trim()) {
           setAlbumModalOpen(false);
           return;
@@ -187,7 +190,7 @@ const AlbumsTab = ({ currentUser }) => {
           const errData = await response.json();
           throw new Error(errData.error || 'Failed to update album.');
         }
-        setAlbums(albums.map(a => a.id === currentAlbum.id ? { ...a, title: currentAlbum.title.trim() } : a));
+        setAlbums(prev => (prev || []).map(a => a.id === currentAlbum.id ? { ...a, title: currentAlbum.title.trim() } : a));
       }
       setAlbumModalOpen(false);
     } catch (err) {
@@ -296,7 +299,8 @@ const AlbumsTab = ({ currentUser }) => {
   };
 
   // Filter Albums locally
-  const filteredAlbums = albums.filter(album => {
+  const activeAlbums = albums || [];
+  const filteredAlbums = activeAlbums.filter(album => {
     // 1. Filter by viewMode (All vs Mine)
     if (viewMode === 'mine' && album.userId !== currentUser.id) {
       return false;
