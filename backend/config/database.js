@@ -15,7 +15,6 @@ if (dialect === 'mysql') {
     {
       host: process.env.DB_HOST || 'localhost',
       dialect: 'mysql',
-      logging: false,
       define: {
         timestamps: true,
       },
