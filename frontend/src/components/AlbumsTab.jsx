@@ -477,7 +477,7 @@ const AlbumsTab = ({ currentUser }) => {
                 <div className="form-group" style={{ marginTop: '1.25rem' }}>
                   <label className="form-label" htmlFor="photo-url">Image URL</label>
                   <input
-                    type="url"
+                    type="text"
                     id="photo-url"
                     className="form-input"
                     value={currentPhoto.url}
